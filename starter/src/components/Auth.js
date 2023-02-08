@@ -1,68 +1,69 @@
-import {useState, useContext} from 'react'
-import axios from 'axios'
-
-import AuthContext from '../store/authContext'
+import { useState, useContext } from "react";
+import axios from "axios";
+import { AuthContext } from "../store/authContext";
 
 const Auth = () => {
-    const [register, setRegister] = useState(true)
-    const [username, setUsername] = useState('')
-    const [password, setPassword] = useState('')
-    const [message, setMessage] = useState('')
-    const [display, setDisplay] = useState('none')
+  const authCtx = useContext(AuthContext);
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [register, setRegister] = useState(true);
+  const [message, setMessage] = useState('')
+  const [display, setDisplay] = useState('none')
 
-    const authCtx = useContext(AuthContext)
+  const submitHandler = (e) => {
+    e.preventDefault();
 
-    const submitHandler = e => {
-        e.preventDefault()
+    let query
+    register===true ? query = 'register' : query = 'login';
+    let url=`http://localhost:4014/${query}`
+// let url=`https://socialmtn.devmountain.com/${query}`
+    axios
+      .post(url, {
+        username, password
+      })
+      .then(({ data }) => {
+        console.log("After Auth", data);
+        const { token, exp, userId } = data;
+        authCtx.login(token, exp, userId);
+      })
+      .catch((err) => {
+        console.log(err);
+        setMessage(err.response.data)
+        setDisplay('block')
+      });
+    setUsername("");
+    setPassword("");
 
-        setDisplay('none')
+    console.log("submitHandler called");
+    console.log(username, password, register);
+  };
 
-        const body = {
-            username,
-            password
-        }
+  return (
+    <main>
+      <h1>Welcome!</h1>
+      <form className="form auth-form" onSubmit={submitHandler}>
+        <input
+          className="form-input"
+          type="text"
+          placeholder="Username"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+        />
+        <input
+          className="form-input"
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        <button className="form-btn">{register ? "Sign Up" : "Login"}</button>
+      </form>
+      <p style={{display: display}} className='auth-msg'>{message}</p>
+      <button className="form-btn" onClick={() => setRegister(false)}>
+        Need to {register ? "Login" : "Sign Up"}?
+      </button>
+    </main>
+  );
+};
 
-        const url = 'https://socialmtn.devmountain.com'
-
-        axios.post(register ? `${url}/register` : `${url}/login`, body)
-            .then((res) => {
-                console.log('AFTER AUTH', res.data)
-                authCtx.login(res.data.token, res.data.exp, res.data.userId)
-            })
-            .catch(err => {
-                setMessage(err.response.data)
-                setDisplay('block')
-                setPassword('')
-                setUsername('')
-            })
-    }
-
-    return (
-        <main>
-            <h1>Welcome!</h1>
-            <form className='form auth-form' onSubmit={submitHandler}>
-                <input 
-                    type='text' 
-                    placeholder='username' 
-                    value={username}
-                    onChange={e => setUsername(e.target.value)}
-                    className='form-input'/>
-                <input 
-                    type='password' 
-                    placeholder='password' 
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    className='form-input'/>
-                <button className='form-btn'>
-                    {register ? 'Sign Up' : 'Login'}
-                </button>
-            </form>
-            <p style={{display: display}} className='auth-msg'>{message}</p>
-            <button className='form-btn' onClick={() => setRegister(!register)}>
-                Need to {register ? 'Login' : 'Sign Up'}?
-            </button>
-        </main>
-    )
-}
-
-export default Auth
+export default Auth;

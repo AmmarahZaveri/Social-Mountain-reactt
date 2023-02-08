@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, createContext } from 'react'
 
 let logoutTimer
 
-const AuthContext = createContext({
+export const AuthContext = createContext({
   token: '',
   login: () => {},
   logout: () => {},
@@ -19,39 +19,31 @@ const calculateRemainingTime = (exp) => {
 const getLocalData = () => {
   const storedToken = localStorage.getItem('token')
   const storedExp = localStorage.getItem('exp')
-  const storedId = localStorage.getItem('userId')
 
   const remainingTime = calculateRemainingTime(storedExp)
 
   if (remainingTime <= 1000 * 60 * 30) {
     localStorage.removeItem('token')
     localStorage.removeItem('exp')
-    localStorage.removeItem('userId')
     return null
   }
-
 
   return {
     token: storedToken,
     duration: remainingTime,
-    userId: storedId
   }
 }
-
-
 
 export const AuthContextProvider = (props) => {
   const localData = getLocalData()
   
   let initialToken
-  let initialId
   if (localData) {
     initialToken = localData.token
-    initialId = localData.userId
   }
 
   const [token, setToken] = useState(initialToken)
-  const [userId, setUserId] = useState(initialId)
+  const [userId, setUserId] = useState(null)
 
 
   const logout = useCallback(() => {
@@ -61,26 +53,27 @@ export const AuthContextProvider = (props) => {
     localStorage.removeItem('exp')
     localStorage.removeItem('userId')
 
-    if (logoutTimer) {
+    if(logoutTimer){
+      console.log('logout')
       clearTimeout(logoutTimer)
     }
   }, [])
 
-  const login = (token, exp, userId) => {
-    setToken(token)
+  const login = (token, expTime, userId) => {
+    setToken(token);
     setUserId(userId)
-
     localStorage.setItem('token', token)
-    localStorage.setItem('exp', exp)
-    localStorage.setItem('userId', userId)
+    localStorage.setItem('expTime', expTime)
+    localStorage.setItem('userId', JSON.stringify(userId))
 
-    const remainingTime = calculateRemainingTime(exp)
-
+    const remainingTime = calculateRemainingTime(expTime)
+    console.log('login')
     logoutTimer = setTimeout(logout, remainingTime)
   }
 
-  useEffect(() => {
-    if (localData) {
+  useEffect(()=> {
+    if(localData){
+      console.log(localData.duration)
       logoutTimer = setTimeout(logout, localData.duration)
     }
   }, [localData, logout])
